@@ -14,7 +14,7 @@ function Stocks() {
   const { loading, tempStocksList, listIndex } = useSelector((state) => state.stocks);
   const { userCurrency, prevUserCurrency } = useSelector((state) => state.currency);
   const dispatch = useDispatch();
-  const [favouriteStocks, setFavouriteStocks] = useState(JSON.parse(localStorage.getItem("favouriteStocksList")));
+  const [favouriteStocks, setFavouriteStocks] = useState(JSON.parse(localStorage.getItem("favouriteStocksList")) || []);
 
   useEffect(() => {
     dispatch(getStocksList());
