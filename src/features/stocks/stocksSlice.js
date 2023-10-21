@@ -11,82 +11,102 @@ import axios from 'axios';
 // https://financialmodelingprep.com/api/v3/profile/AAPL?apikey=${process.env.REACT_APP_STOCKS_API_KEY} company information
 
 const chunkArray = (arr, size) =>
-  arr.length > size
-    ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
-    : [arr];
+	arr.length > size
+		? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+		: [arr];
 
 export const getStocksList = createAsyncThunk(
-  '/stocks/getStocksList',
-  async (_, thunkAPI) => {
-    const stocks = await axios.get(`https://financialmodelingprep.com/api/v3/stock/list?apikey=${process.env.REACT_APP_STOCKS_API_KEY}`);
-    return (stocks.data).filter(stock => stock.type === 'stock');
-  }
-)
+	'/stocks/getStocksList',
+	async (_, thunkAPI) => {
+		const stocks = await axios.get(
+			`https://financialmodelingprep.com/api/v3/stock/list?apikey=${process.env.REACT_APP_STOCKS_API_KEY}`
+		);
+		return stocks.data.filter((stock) => stock.type === 'stock');
+	}
+);
 
 export const stocksSlice = createSlice({
-  name: 'stocks',
-  initialState: {
-    stocksList: [],
-    unmodifiedStocksList: [],
-    tempStocksList: [],
-    searchStocksList: [],
-    isSearching: false,
-    listIndex: 0,
-    loading: false,
-    etfList: [],
-    viewedStocks: [],
-    favouriteStocks: [],
-    favouriteETFs: []
-  },
-  reducers: {
-    getMoreStocks: (state, action) => {
-      state.listIndex = action.payload.listIndex;
-      if(state.searchStocksList.length < 60 && state.isSearching) {
-        return;
-      } else {
-        state.tempStocksList = [...state.tempStocksList, ...(chunkArray(state.isSearching ? state.searchStocksList : state.stocksList, 60))[state.listIndex]];
-      }
-    },
-    searchStock: (state, action) => {
-      if(action.payload) {
-        state.isSearching = true;
-        const searchStocksList = state.stocksList.map((stock) => {
-          const stockObj = JSON.parse(JSON.stringify(stock));
-          const search = (action.payload).toLowerCase().trim();
-          const stockSymbol = (stockObj.symbol) && (stockObj.symbol).toLowerCase();
-          const stockCompanyName = (stockObj.symbol) && (stockObj.name).toLowerCase();
-          if(stockSymbol.indexOf(search) !== -1 || stockCompanyName.indexOf(search) !== -1) {
-            return stockObj;
-          }
-        }).filter((element) => element !== undefined);
-        state.searchStocksList = searchStocksList;
-        state.tempStocksList = chunkArray(searchStocksList, 60)[0];
-        state.listIndex = 0;
-      } else {
-        state.isSearching = false;
-        state.stocksList = state.unmodifiedStocksList;
-        state.tempStocksList = chunkArray(state.stocksList, 60)[0];
-        state.listIndex = 0;
-      }
-    },
-    addStock: (state, action) => {
-      console.log(action.payload);
-    }
-  },
-  extraReducers: (builder) => {
-    builder.addCase(getStocksList.pending, (state, action) => {
-      state.loading = true;
-    })
-    builder.addCase(getStocksList.fulfilled, (state, action) => {
-      state.stocksList = action.payload;
-      state.unmodifiedStocksList = action.payload;
-      state.tempStocksList = (chunkArray(action.payload, 60))[0];
-      state.loading = false;
-    })
-    builder.addCase(getStocksList.rejected, (state, action) => {
-      state.stocksList = [];
-    })
-  }
+	name: 'stocks',
+	initialState: {
+		stocksList: [],
+		unmodifiedStocksList: [],
+		tempStocksList: [],
+		searchStocksList: [],
+		isSearching: false,
+		listIndex: 0,
+		loading: false,
+		etfList: [],
+		viewedStocks: [],
+		favouriteStocks: [],
+		favouriteETFs: [],
+	},
+	reducers: {
+		getMoreStocks: (state, action) => {
+			state.listIndex = action.payload.listIndex;
+			if (state.searchStocksList.length < 60 && state.isSearching) {
+				return;
+			} else {
+				state.tempStocksList = [
+					...state.tempStocksList,
+					...chunkArray(
+						state.isSearching ? state.searchStocksList : state.stocksList,
+						60
+					)[state.listIndex],
+				];
+			}
+		},
+		searchStock: (state, action) => {
+			if (action.payload) {
+				state.isSearching = true;
+				const searchStocksList = state.stocksList
+					.map((stock) => {
+						const stockObj = JSON.parse(JSON.stringify(stock));
+						const search =
+							action && action.payload
+								? action.payload.toLowerCase().trim()
+								: null;
+						const stockSymbol = stockObj?.symbol
+							? stockObj.symbol.toLowerCase()
+							: null;
+						const stockCompanyName = stockObj?.name
+							? stockObj.name.toLowerCase()
+							: null;
+						if (
+							(stockSymbol && stockSymbol.indexOf(search) !== -1) ||
+							(stockCompanyName && stockCompanyName.indexOf(search) !== -1)
+						) {
+							return stockObj;
+						}
+					})
+					.filter((element) => element !== undefined);
+				state.searchStocksList = searchStocksList;
+				state.tempStocksList = chunkArray(searchStocksList, 60)[0];
+				state.listIndex = 0;
+			} else {
+				state.isSearching = false;
+				state.stocksList = state.unmodifiedStocksList;
+				state.tempStocksList = chunkArray(state.stocksList, 60)[0];
+				state.listIndex = 0;
+			}
+		},
+		addStock: (state, action) => {
+			console.log(action.payload);
+		},
+	},
+	extraReducers: (builder) => {
+		builder.addCase(getStocksList.pending, (state, action) => {
+			state.loading = true;
+		});
+		builder.addCase(getStocksList.fulfilled, (state, action) => {
+			state.stocksList = action.payload;
+			state.unmodifiedStocksList = action.payload;
+			state.tempStocksList = chunkArray(action.payload, 60)[0];
+			state.loading = false;
+		});
+		builder.addCase(getStocksList.rejected, (state, action) => {
+			state.stocksList = [];
+		});
+	},
 });
 
 export const { getMoreStocks, searchStock, addStock } = stocksSlice.actions;
